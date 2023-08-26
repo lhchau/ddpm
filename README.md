@@ -39,14 +39,18 @@
 
 ## Attention Module
 
+- Multi-head self-attention vs Linear attention variant
+
 ## Group Normalization
+
+- Stable training
 
 ## Conditional U-Net
 
 - Define the entire neural network, the job of $\epsilon_\theta(x_t, t)$ is to take in a batch of noisy images and their respective noise levels, and output the noise added to the input
 - The network is built up as follows:
     - first, a convolutional layer is applied on the **batch** of noisy images, and position embeddings are computed for the noise levels
-    - next, a sequence of **downsampling** stages are applied. Each downsampling stage consists of *2 ResNet blocks* + *groupnorm* + *attention* + *residual connection* + *a downsample*
-    - at the **bottleneck**, again ResNet blocks are applied, interleaved with attention
-    - next, a sequence of **upsampling** stages are applied. Each upsampling stage consists of *2 ResNet blocks* + *groupnorm* + *attention* + *residual connection* + *a upsample*
+    - second, a sequence of **downsampling** stages are applied. Each downsampling stage consists of *2 ResNet blocks* + *groupnorm* + *attention* + *residual connection* + *a downsample*
+    - third, at the **bottleneck**, again ResNet blocks are applied, interleaved with attention
+    - fourth, a sequence of **upsampling** stages are applied. Each upsampling stage consists of *2 ResNet blocks* + *groupnorm* + *attention* + *residual connection* + *a upsample*
     - finally, a ResNet block followed by a convolutional layer is applied

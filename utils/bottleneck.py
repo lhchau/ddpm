@@ -19,7 +19,7 @@ class WeightStandardizedConv2d(nn.Conv2d):
         var = reduce(weight,"o ... -> o 1 1 1", partial(torch.var, unbiased=False))
         normalized_weight = (weight - mean) * (var + eps).rsqrt()
         
-        return F.conv2(
+        return F.conv2d(
             x, 
             normalized_weight,
             self.bias,
@@ -54,7 +54,7 @@ class Block(nn.Module):
         return x
     
 
-class ResNetBlock(nn.Module):
+class ResnetBlock(nn.Module):
     
     def __init__(
         self,
