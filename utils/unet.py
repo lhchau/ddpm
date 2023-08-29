@@ -10,10 +10,10 @@ from utils.attention import Attention, LinearAttention
 class Unet(nn.Module):
     def __init__(
         self,
-        dim,
-        init_dim=None,
-        out_dim=None,
-        dim_mults=(1, 2, 4, 8),
+        dim,                    
+        init_dim=None,          # if init_dim is None: init_dim = dim
+        out_dim=None,           # if out_dim is None: out_dim = channels
+        dim_mults=(1, 2, 4, 8), # define number layers of downsample and upsample
         channels=3,
         self_condition=False,
         resnet_block_groups=4,
@@ -29,9 +29,12 @@ class Unet(nn.Module):
         # first, a convolutional layer is applied on the batch of noisy images
         self.init_conv = nn.Conv2d(input_channels, init_dim, 1, padding=0) # changed to 1 and 0 from 7,3
 
+        # if dim = 28, init_dim = 28 => dims = [28, 28, 56, 112, 224]
         dims = [init_dim, *map(lambda m: dim * m, dim_mults)]
+        # if dim = 28, init_dim = 28 => in_out = [(28, 28), (28, 56), (56, 112), (112, 224)]
         in_out = list(zip(dims[:-1], dims[1:]))
 
+        # Module to add time embedding
         block_klass = partial(ResnetBlock, groups=resnet_block_groups)
 
         # time embeddings, position embeddings are computed for the noise levels
@@ -55,9 +58,13 @@ class Unet(nn.Module):
             self.downs.append(
                 nn.ModuleList(
                     [
+                        # block1
                         block_klass(dim_in, dim_in, time_emb_dim=time_dim),
+                        # block2
                         block_klass(dim_in, dim_in, time_emb_dim=time_dim),
+                        # Attention
                         Residual(PreNorm(dim_in, LinearAttention(dim_in))),
+                        # Downsample
                         Downsample(dim_in, dim_out)
                         if not is_last
                         else nn.Conv2d(dim_in, dim_out, 3, padding=1),
@@ -78,9 +85,13 @@ class Unet(nn.Module):
             self.ups.append(
                 nn.ModuleList(
                     [
+                        # block1
                         block_klass(dim_out + dim_in, dim_out, time_emb_dim=time_dim),
+                        # block2
                         block_klass(dim_out + dim_in, dim_out, time_emb_dim=time_dim),
+                        # Attention
                         Residual(PreNorm(dim_out, LinearAttention(dim_out))),
+                        # Upsample
                         Upsample(dim_out, dim_in)
                         if not is_last
                         else nn.Conv2d(dim_out, dim_in, 3, padding=1),
@@ -104,8 +115,10 @@ class Unet(nn.Module):
 
         t = self.time_mlp(time)
 
+        # h to store value for skip connection
         h = []
 
+        # Downsample
         for block1, block2, attn, downsample in self.downs:
             x = block1(x, t)
             h.append(x)
@@ -115,11 +128,13 @@ class Unet(nn.Module):
             h.append(x)
 
             x = downsample(x)
-
+        
+        # Bottleneck
         x = self.mid_block1(x, t)
         x = self.mid_attn(x)
         x = self.mid_block2(x, t)
 
+        # Upsample
         for block1, block2, attn, upsample in self.ups:
             x = torch.cat((x, h.pop()), dim=1)
             x = block1(x, t)

@@ -1,6 +1,6 @@
 import torch
 
-
+# Improved the forward process, prevent fast noise addition
 def cosine_beta_schedule(timesteps, s=0.008):
     """
     cosine schedule as proposed in https://arxiv.org/abs/2102.09672
@@ -12,6 +12,7 @@ def cosine_beta_schedule(timesteps, s=0.008):
     betas = 1 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
     return torch.clip(betas, 0.0001, 0.9999)
 
+# Original paper
 def linear_beta_schedule(timesteps):
     beta_start = 0.0001
     beta_end = 0.02
